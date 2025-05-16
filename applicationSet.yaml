@@ -1,0 +1,64 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: streams-app-set
+  namespace: openshift-gitops
+spec:
+  generators:
+    - merge:
+        generators:
+          - clusterDecisionResource:
+              configMapRef: acm-placement
+              labelSelector:
+                matchLabels:
+                  cluster.open-cluster-management.io/placement: streams-app-set-placement
+              requeueAfterSeconds: 180
+          - list:
+              elements:
+                - cluster: cluster-live
+                  name: live
+                  mm2_replicas: 0
+                  mm2_source_bootstrap: streams-cluster-kafka-mirroring-bootstrap.kafka-dr.svc.clusterset.local:9093
+                  mm2_target_bootstrap: streams-cluster-kafka-mirroring-bootstrap.kafka-live.svc.cluster.local:9093
+                - cluster: cluster-failover
+                  name: dr
+                  mm2_replicas: 1
+                  mm2_source_bootstrap: streams-cluster-kafka-mirroring-bootstrap.kafka-live.svc.cluster.local:9093
+                  mm2_target_bootstrap: streams-cluster-kafka-mirroring-bootstrap.kafka-dr.svc.clusterset.local:9093
+        mergeKeys:
+          - cluster
+  template:
+    metadata:
+      annotations:
+        apps.open-cluster-management.io/ocm-managed-cluster: '{{cluster}}'
+        apps.open-cluster-management.io/ocm-managed-cluster-app-namespace: openshift-gitops
+        argocd.argoproj.io/skip-reconcile: 'true'
+      labels:
+        apps.open-cluster-management.io/pull-to-ocm-managed-cluster: 'true'
+        velero.io/exclude-from-backup: 'true'
+      name: 'streams-app-set-{{cluster}}'
+    spec:
+      destination:
+        namespace: 'kafka-{{name}}'
+        server: '{{server}}'
+      project: default
+      sources:
+        - kustomize:
+            patches:
+              - patch: |-
+                  - op: replace
+                    path: /spec/replicas
+                    value: {{mm2_replicas}}
+                target:
+                  kind: KafkaMirrorMaker2
+                  name: streams-mm2
+          path: '.'
+          repoURL: 'https://github.com/mronconis/strimzi-mirroring.git'
+          targetRevision: main
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - PruneLast=true

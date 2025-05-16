@@ -1,0 +1,28 @@
+---
+apiVersion: multicluster.x-k8s.io/v1alpha1
+kind: ServiceExport
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  name: streams-cluster-kafka-mirroring-bootstrap
+---
+apiVersion: multicluster.x-k8s.io/v1alpha1
+kind: ServiceExport
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  name: streams-cluster-kafka-mirroring-0
+---
+apiVersion: multicluster.x-k8s.io/v1alpha1
+kind: ServiceExport
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  name: streams-cluster-kafka-mirroring-1
+---
+apiVersion: multicluster.x-k8s.io/v1alpha1
+kind: ServiceExport
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  name: streams-cluster-kafka-mirroring-2
