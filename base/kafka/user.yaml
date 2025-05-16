@@ -1,0 +1,25 @@
+apiVersion: kafka.strimzi.io/v1beta1
+kind: KafkaUser
+metadata:
+  name: mirroring-user
+  labels:
+    strimzi.io/cluster: streams-cluster
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  authentication:
+    type: scram-sha-512
+  # super-users do not declare authorization block
+---
+apiVersion: kafka.strimzi.io/v1beta1
+kind: KafkaUser
+metadata:
+  name: admin
+  labels:
+    strimzi.io/cluster: streams-cluster
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  authentication:
+    type: scram-sha-512
+  # super-users do not declare authorization block

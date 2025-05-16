@@ -1,0 +1,28 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: Kafka
+metadata:
+  name: streams-cluster
+spec:
+  kafka:
+    listeners:
+      - name: plain
+        port: 9092
+        type: internal
+        tls: false
+        authentication:
+          type: scram-sha-512
+      - name: mirroring
+        port: 9093
+        type: cluster-ip
+        tls: false
+        authentication:
+          type: scram-sha-512
+        # Enable this conf when enable mirorring from dr -> live
+        # configuration:
+        #   brokers:
+        #   - broker: 0
+        #     advertisedHost: streams-cluster-kafka-mirroring-0.kafka-dr.svc.clusterset.local
+        #   - broker: 1
+        #     advertisedHost: streams-cluster-kafka-mirroring-1.kafka-dr.svc.clusterset.local
+        #   - broker: 2
+        #     advertisedHost: streams-cluster-kafka-mirroring-2.kafka-dr.svc.clusterset.local

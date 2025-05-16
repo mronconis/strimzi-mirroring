@@ -1,0 +1,82 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaMirrorMaker2
+metadata:
+  name: streams-mm2
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  version: 3.9.0
+  replicas: 0
+  connectCluster: "cluster-target" # Must be the target custer
+  clusters:
+  - alias: "cluster-source" # Source cluster
+    bootstrapServers: streams-cluster-kafka-mirroring-bootstrap.kafka-live.svc.clusterset.local:9093
+    authentication:
+      type: scram-sha-512
+      username: mirroring-user
+      passwordSecret:
+        secretName: dr-mirroring-user
+        password: password
+  - alias: "cluster-target" # Target cluster
+    bootstrapServers: streams-cluster-kafka-mirroring-bootstrap.kafka-dr.svc.cluster.local:9093
+    authentication:
+      type: scram-sha-512
+      username: mirroring-user
+      passwordSecret:
+        secretName: mirroring-user
+        password: password
+    config:
+      config.storage.replication.factor: -1
+      offset.storage.replication.factor: -1
+      status.storage.replication.factor: -1
+  mirrors:
+  - sourceCluster: "cluster-source"
+    targetCluster: "cluster-target"
+    sourceConnector:
+      tasksMax: 2
+      config:
+        replication.factor: -1
+        offset-syncs.topic.replication.factor: -1
+        sync.topic.acls.enabled: "false" # This should be false when User Operator is enabled
+        sync.topic.configs.enabled: "false" # it prevents MirrorMaker 2 to update the configuration for the manually created topics
+        refresh.topics.enabled: "false" # it prevents MirrorMaker 2 to update the configuration for the manually created topics
+        topic.creation.enable: "false" # it prevents MirrorMaker 2 to update the configuration for the manually created topics
+        topic.creation.default.replication.factor: -1
+        topic.creation.default.partitions: -1
+        replication.policy.class: "org.apache.kafka.connect.mirror.IdentityReplicationPolicy"
+        refresh.topics.interval.seconds: 60
+    heartbeatConnector:
+      tasksMax: 1
+      config:
+        heartbeats.topic.replication.factor: -1
+        replication.policy.class: "org.apache.kafka.connect.mirror.IdentityReplicationPolicy"
+    checkpointConnector:
+      tasksMax: 2
+      config:
+        checkpoints.topic.replication.factor: -1
+        replication.policy.class: "org.apache.kafka.connect.mirror.IdentityReplicationPolicy"
+        sync.group.offsets.enabled: true
+        sync.group.offsets.interval.seconds: 60
+        emit.checkpoints.interval.seconds: 60
+        # Interval period to refresh consumer groups statuses (Default: 600)
+        refresh.groups.interval.seconds: 60
+    topicsPattern: "my-topic"
+    topicsExcludePattern: ".*\\.internal, mirrormaker2-cluster-.*, __.*"
+    groupsPattern: "app-group"
+  resources:
+    requests:
+      cpu: "100m"
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 1Gi
+  logging:
+    type: inline
+    loggers:
+      connect.root.logger.level: "INFO"
+  metricsConfig:
+    type: jmxPrometheusExporter
+    valueFrom:
+      configMapKeyRef:
+        name: mirror-maker-2-metrics
+        key: metrics-config.yml

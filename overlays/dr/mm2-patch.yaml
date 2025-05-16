@@ -1,0 +1,27 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaMirrorMaker2
+metadata:
+  name: streams-mm2
+spec:
+  replicas: 1
+  clusters:
+  - alias: "cluster-source" # Source cluster
+    bootstrapServers: streams-cluster-kafka-mirroring-bootstrap.kafka-live.svc.clusterset.local:9093
+    authentication:
+      type: scram-sha-512
+      username: mirroring-user
+      passwordSecret:
+        secretName: live-mirroring-user
+        password: password
+  - alias: "cluster-target" # Target cluster
+    bootstrapServers: streams-cluster-kafka-mirroring-bootstrap.kafka-dr.svc.cluster.local:9093
+    authentication:
+      type: scram-sha-512
+      username: mirroring-user
+      passwordSecret:
+        secretName: mirroring-user
+        password: password
+    config:
+      config.storage.replication.factor: -1
+      offset.storage.replication.factor: -1
+      status.storage.replication.factor: -1

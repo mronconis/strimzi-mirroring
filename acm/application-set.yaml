@@ -1,0 +1,47 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: streams-app-set
+  namespace: openshift-gitops
+spec:
+  generators:
+    - merge:
+        generators:
+          - clusterDecisionResource:
+              configMapRef: acm-placement
+              labelSelector:
+                matchLabels:
+                  cluster.open-cluster-management.io/placement: streams-app-set-placement
+              requeueAfterSeconds: 180
+          - list:
+              elements:
+                - name: cluster-live
+                  path: live
+                - name: cluster-failover
+                  path: dr
+        mergeKeys:
+          - name
+  template:
+    metadata:
+      annotations:
+        apps.open-cluster-management.io/ocm-managed-cluster: '{{name}}'
+        apps.open-cluster-management.io/ocm-managed-cluster-app-namespace: openshift-gitops
+        argocd.argoproj.io/skip-reconcile: 'true'
+      labels:
+        apps.open-cluster-management.io/pull-to-ocm-managed-cluster: 'true'
+        velero.io/exclude-from-backup: 'true'
+      name: 'streams-app-{{path}}'
+    spec:
+      destination:
+        namespace: 'kafka-{{path}}'
+        server: '{{server}}'
+      project: default
+      sources:
+        - kustomize:
+          path: 'overlays/{{path}}'
+          repoURL: 'https://github.com/mronconis/strimzi-mirroring.git'
+          targetRevision: main
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true
+          - PruneLast=true
