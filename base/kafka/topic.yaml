@@ -1,0 +1,11 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: my-topic
+  labels:
+    strimzi.io/cluster: streams-cluster
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  partitions: 3
+  replicas: 3

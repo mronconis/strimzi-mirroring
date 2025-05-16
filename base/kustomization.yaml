@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - kafka/kafka.yaml
+  - kafka/user.yaml
+  - kafka/topic.yaml
+  - kafka/config-map.yaml
+  - mirror-maker2/mm2.yaml
+  - mirror-maker2/config-map.yaml
+  - submariner/service-export.yaml
