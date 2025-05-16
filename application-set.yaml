@@ -1,0 +1,109 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: streams-app-set
+  namespace: openshift-gitops
+spec:
+  generators:
+    - merge:
+        generators:
+          - clusterDecisionResource:
+              configMapRef: acm-placement
+              labelSelector:
+                matchLabels:
+                  cluster.open-cluster-management.io/placement: streams-app-set-placement
+              requeueAfterSeconds: 180
+          - list:
+              elements:
+                - name: cluster-live
+                  namespace: live
+                  mm2_replicas: 0
+                  mm2_source_username: dr-mirroring-user
+                  mm2_source_bootstrap: prodcloudify-kafka-mirroring-bootstrap.kafka-dr.svc.clusterset.local:9093
+                  mm2_target_bootstrap: prodcloudify-kafka-mirroring-bootstrap.kafka-live.svc.cluster.local:9093
+                - name: cluster-failover
+                  namespace: dr
+                  mm2_replicas: 1
+                  mm2_source_username: live-mirroring-user
+                  mm2_source_bootstrap: prodcloudify-kafka-mirroring-bootstrap.kafka-live.svc.clusterset.local:9093
+                  mm2_target_bootstrap: prodcloudify-kafka-mirroring-bootstrap.kafka-dr.svc.cluster.local:9093
+        mergeKeys:
+          - name
+  template:
+    metadata:
+      annotations:
+        apps.open-cluster-management.io/ocm-managed-cluster: '{{name}}'
+        apps.open-cluster-management.io/ocm-managed-cluster-app-namespace: openshift-gitops
+        argocd.argoproj.io/skip-reconcile: 'true'
+      labels:
+        apps.open-cluster-management.io/pull-to-ocm-managed-cluster: 'true'
+        velero.io/exclude-from-backup: 'true'
+      name: 'streams-app-set-{{name}}'
+    spec:
+      destination:
+        namespace: 'kafka-{{namespace}}'
+        server: '{{server}}'
+      project: default
+      sources:
+        - kustomize:
+            patches:
+              - patch: |-
+                  - op: replace
+                    path: /spec/replicas
+                    value: {{mm2_replicas}}
+                target:
+                  kind: KafkaMirrorMaker2
+                  name: streams-mm2
+              - patch: |-
+                  - op: replace
+                    path: /spec/clusters/0/bootstrapServers
+                    value: {{mm2_source_bootstrap}}
+                target:
+                  kind: KafkaMirrorMaker2
+                  name: streams-mm2
+              - patch: |-
+                  - op: replace
+                    path: /spec/clusters/1/bootstrapServers
+                    value: {{mm2_target_bootstrap}}
+                target:
+                  kind: KafkaMirrorMaker2
+                  name: streams-mm2
+              - patch: |-
+                  - op: replace
+                    path: /spec/clusters/0/authentication/passwordSecret/secretName
+                    value: {{mm2_source_username}}
+                target:
+                  kind: KafkaMirrorMaker2
+                  name: streams-mm2
+
+              - patch: |-
+                  - op: replace
+                    path: /spec/kafka/listeners/1/configuration/brokers/0/advertisedHost
+                    value: 'prodcloudify-kafka-mirroring-0.kafka-{{namespace}}.svc.clusterset.local'
+                target:
+                  kind: Kafka
+                  name: prodcloudify
+              - patch: |-
+                  - op: replace
+                    path: /spec/kafka/listeners/1/configuration/brokers/1/advertisedHost
+                    value: 'prodcloudify-kafka-mirroring-1.kafka-{{namespace}}.svc.clusterset.local'
+                target:
+                  kind: Kafka
+                  name: prodcloudify
+              - patch: |-
+                  - op: replace
+                    path: /spec/kafka/listeners/1/configuration/brokers/2/advertisedHost
+                    value: 'prodcloudify-kafka-mirroring-2.kafka-{{namespace}}.svc.clusterset.local'
+                target:
+                  kind: Kafka
+                  name: prodcloudify
+          path: 'base'
+          repoURL: 'https://github.com/mronconis/strimzi-mirroring.git'
+          targetRevision: main
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - PruneLast=true
