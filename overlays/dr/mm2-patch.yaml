@@ -3,7 +3,7 @@ kind: KafkaMirrorMaker2
 metadata:
   name: streams-mm2
 spec:
-  replicas: 1
+  replicas: 0
   clusters:
   - alias: "cluster-source" # Source cluster
     bootstrapServers: streams-cluster-kafka-mirroring-bootstrap.kafka-live.svc.clusterset.local:9093

@@ -30,7 +30,7 @@ spec:
       labels:
         apps.open-cluster-management.io/pull-to-ocm-managed-cluster: 'true'
         velero.io/exclude-from-backup: 'true'
-      name: 'streams-app-{{name}}'
+      name: 'streams-app-{{path}}'
     spec:
       destination:
         namespace: 'kafka-{{path}}'
