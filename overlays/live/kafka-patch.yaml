@@ -18,11 +18,11 @@ spec:
         authentication:
           type: scram-sha-512
         # Enable this conf when enable mirorring from live -> dr
-        configuration:
-          brokers:
-          - broker: 0
-            advertisedHost: streams-cluster-kafka-mirroring-0.kafka-live.svc.clusterset.local
-          - broker: 1
-            advertisedHost: streams-cluster-kafka-mirroring-1.kafka-live.svc.clusterset.local
-          - broker: 2
-            advertisedHost: streams-cluster-kafka-mirroring-2.kafka-live.svc.clusterset.local
+        # configuration:
+        #   brokers:
+        #   - broker: 0
+        #     advertisedHost: streams-cluster-kafka-mirroring-0.kafka-live.svc.clusterset.local
+        #   - broker: 1
+        #     advertisedHost: streams-cluster-kafka-mirroring-1.kafka-live.svc.clusterset.local
+        #   - broker: 2
+        #     advertisedHost: streams-cluster-kafka-mirroring-2.kafka-live.svc.clusterset.local
